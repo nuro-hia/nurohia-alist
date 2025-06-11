@@ -5,7 +5,7 @@ INSTALL_DIR="/opt/alist"
 SERVICE_FILE="/etc/systemd/system/alist.service"
 ARCH=$(uname -m)
 
-# === 替换为你实际的 tar.gz 链接 ===
+# 默认链接（用户不输入时使用）
 ALIST_AMD64_URL="https://github.com/nuro-hia/nurohia-alist/releases/download/v3.39.4/alist-linux-amd64.tar.gz"
 ALIST_ARM64_URL="https://github.com/nuro-hia/nurohia-alist/releases/download/v3.39.4/alist-linux-arm64.tar.gz"
 
@@ -31,12 +31,20 @@ function install_alist() {
   echo "[+] 安装 Alist v3.39.4 到 $INSTALL_DIR"
   mkdir -p "$INSTALL_DIR"
   cd "$INSTALL_DIR"
-  
+
   systemctl stop alist 2>/dev/null || true
   backup_data
 
+  echo -e "[*] 是否使用自定义 .tar.gz 下载链接？\n留空则使用默认版本 v3.39.4"
+  read -rp "请输入下载链接: " custom_url
+
+  if [[ -n "$custom_url" ]]; then
+    url="$custom_url"
+  else
+    url=$(detect_arch)
+  fi
+
   echo "[*] 下载 Alist..."
-  url=$(detect_arch)
   wget -O alist.tar.gz "$url"
 
   echo "[*] 解压中..."
@@ -66,7 +74,7 @@ EOF
   systemctl enable alist
   systemctl start alist
 
-  echo "===== \U1F389 Alist 部署完成，登录信息如下 ====="
+  echo "===== 🎉 Alist 部署完成，登录信息如下 ====="
   sleep 2
   ADMIN_INFO=$("${INSTALL_DIR}/alist" admin 2>/dev/null || true)
   if [[ "$ADMIN_INFO" == *"Username"* && "$ADMIN_INFO" == *"Password"* ]]; then
@@ -143,7 +151,7 @@ function reset_admin_password() {
   if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
     if [ -x "$INSTALL_DIR/alist" ]; then
       NEW_ADMIN=$("$INSTALL_DIR/alist" admin --reset 2>/dev/null)
-      echo "===== \U1F511 密码已重置 ====="
+      echo "===== 🔐 密码已重置 ====="
       echo "$NEW_ADMIN"
       echo "================================"
     else
