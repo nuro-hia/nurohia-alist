@@ -64,7 +64,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=${INSTALL_DIR}/alist
+ExecStart=${INSTALL_DIR}/alist server
 WorkingDirectory=${INSTALL_DIR}
 Restart=always
 User=root
