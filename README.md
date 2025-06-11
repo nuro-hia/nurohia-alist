@@ -28,7 +28,9 @@ bash <(curl -fsSL https://raw.githubusercontent.com/nuro-hia/nurohia-alist/main/
 6) 停止 Alist 服务
 7) 卸载 Alist
 8) 重置管理员密码
-9) 退出
+9) 更改面板端口
+10) 快速显示访问地址
+11) 退出
 =======================================
 
 ```
