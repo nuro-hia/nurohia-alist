@@ -165,7 +165,7 @@ function reset_admin_password() {
 function show_menu() {
   clear
   echo "===== NuroHia Alist v3.39.4 一键部署管理器 ====="
-  echo "1) 安装 Alist v3.39.4"
+  echo "1) 安装 Alist"
   echo "2) 强制降级至 v3.39.4"
   echo "3) 查看当前运行状态"
   echo "4) 查看当前 Alist 版本"
