@@ -18,10 +18,10 @@ bash <(curl -fsSL https://raw.githubusercontent.com/nuro-hia/nurohia-alist/main/
 
 ```
 ===== NuroHia · Alist 一键部署&管理菜单 =====
-===== 默认安装为 v3.39.4 版本（支持自定义包链接） =====
+===== 安装、强制降级默认为 v3.39.4 版本（支持自定义包链接） =====
 
 1) 安装 Alist（可自定义安装包链接，默认 v3.39.4）
-2) 强制降级至 v3.39.4
+2) 强制降级Alist 版本（可自定义安装包链接，默认 v3.39.4）
 3) 查看当前运行状态
 4) 查看当前 Alist 版本
 5) 重启 Alist 服务
