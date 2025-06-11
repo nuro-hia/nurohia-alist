@@ -3,9 +3,9 @@ set -e
 
 INSTALL_DIR="/opt/alist"
 SERVICE_FILE="/etc/systemd/system/alist.service"
+SCRIPT_PATH="/usr/local/bin/nuro-alist"
 ARCH=$(uname -m)
 DEFAULT_PORT=5244
-BIN_LINK="/usr/bin/nuro-alist"
 
 ALIST_AMD64_URL="https://github.com/nuro-hia/nurohia-alist/releases/download/v3.39.4/alist-linux-amd64.tar.gz"
 ALIST_ARM64_URL="https://github.com/nuro-hia/nurohia-alist/releases/download/v3.39.4/alist-linux-arm64.tar.gz"
@@ -30,6 +30,25 @@ function backup_data() {
   if [ -f "$INSTALL_DIR/data/data.db" ]; then
     cp "$INSTALL_DIR/data/data.db" "$INSTALL_DIR/data/data.db.bak.$(date +%Y%m%d%H%M%S)"
     echo "[*] 数据库已备份"
+  fi
+}
+
+function get_server_ip() {
+  IP=$(curl -s ipv4.ip.sb || curl -s ifconfig.me || hostname -I | awk '{print $1}' || echo "你的服务器IP")
+  echo "$IP"
+}
+
+function get_alist_port() {
+  if [ -f "$INSTALL_DIR/data/config.json" ]; then
+    # 兼容新老字段
+    port=$(grep -Po '"http_port"\s*:\s*\K\d+' "$INSTALL_DIR/data/config.json" || grep -Po '"address"\s*:\s*":\K\d+' "$INSTALL_DIR/data/config.json")
+    if [[ $port =~ ^[0-9]{4,5}$ ]]; then
+      echo "$port"
+    else
+      echo "$DEFAULT_PORT"
+    fi
+  else
+    echo "$DEFAULT_PORT"
   fi
 }
 
@@ -60,7 +79,10 @@ function install_alist() {
 
   echo "[*] 初始化配置目录..."
   mkdir -p data
-  echo '{"address": ":'"$DEFAULT_PORT"'"}' > data/config.json
+  # 配置文件初始化，若已存在不覆盖端口
+  if [ ! -f data/config.json ]; then
+    echo '{"http_port":'"$DEFAULT_PORT"'}' > data/config.json
+  fi
 
   echo "[*] 写入 systemd 服务配置..."
   cat > "$SERVICE_FILE" <<EOF
@@ -84,31 +106,30 @@ EOF
   systemctl enable alist
   systemctl start alist
 
-  echo "[*] 初始化管理员密码为: 用户名 admin 密码 123456"
-  "$INSTALL_DIR/alist" admin set 123456 >/dev/null 2>&1 || true
-
-  ln -sf "$INSTALL_DIR/alist" "$BIN_LINK"
-
-  IP=$(curl -s ipv4.ip.sb || curl -s ifconfig.me || echo "你的服务器IP")
-  echo "Web 面板访问地址： http://$IP:$DEFAULT_PORT"
+  IP=$(get_server_ip)
+  port=$(get_alist_port)
+  echo "Web 面板访问地址： http://$IP:$port"
   echo "======================================="
   pause_return
 }
 
 function downgrade_alist() {
-  echo "[!] 正在降级至 v3.39.4..."
+  echo "[!] 正在降级至 v3.39.4，仅覆盖二进制文件，不重置账号和配置。"
   mkdir -p "$INSTALL_DIR"
   cd "$INSTALL_DIR"
+
   systemctl stop alist 2>/dev/null || true
-  backup_data
   url=$(detect_arch)
-  echo "[*] 下载 Alist..."
   wget -O alist.tar.gz "$url"
   tar -xzf alist.tar.gz
   chmod +x alist
   rm -f alist.tar.gz
-  systemctl start alist
-  echo "[*] 已降级完毕，不更改用户信息"
+  systemctl restart alist
+
+  echo "[✔] 降级完成。"
+  IP=$(get_server_ip)
+  port=$(get_alist_port)
+  echo "Web 面板访问地址： http://$IP:$port"
   pause_return
 }
 
@@ -126,7 +147,8 @@ function show_status() {
     echo "未检测到"
   fi
   echo -n "[*] 监听端口: "
-  grep '"address"' "$INSTALL_DIR/data/config.json" | cut -d':' -f2- | tr -d '"}' || echo "未监听或未启动"
+  port=$(get_alist_port)
+  echo "$port"
   echo "================================"
   pause_return
 }
@@ -155,7 +177,7 @@ function stop_alist() {
 }
 
 function uninstall_alist() {
-  echo "[!] 确认卸载 Alist？[y/N]"
+  echo "[!] 确认卸载 Alist（含数据）？[y/N]"
   read -r confirm
   if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
     systemctl stop alist
@@ -164,8 +186,19 @@ function uninstall_alist() {
     systemctl daemon-reexec
     systemctl daemon-reload
     rm -rf "$INSTALL_DIR"
-    rm -f "$BIN_LINK"
-    echo "[✔] Alist 已卸载并清理完毕"
+    echo "[✔] Alist 已卸载"
+  else
+    echo "已取消"
+  fi
+  pause_return
+}
+
+function uninstall_script() {
+  echo "[!] 确认卸载 nuro-alist 脚本自身？[y/N]"
+  read -r confirm
+  if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
+    rm -f "$SCRIPT_PATH"
+    echo "[✔] 已卸载 nuro-alist 快捷命令（Alist 本体和数据不会被删除）"
     exit 0
   else
     echo "已取消"
@@ -186,20 +219,52 @@ function reset_admin_password() {
 }
 
 function change_port() {
+  if [ ! -f "$INSTALL_DIR/data/config.json" ]; then
+    echo "配置文件不存在，无法更改端口。"
+    pause_return
+    return
+  fi
   echo "[*] 当前监听端口:"
-  grep '"address"' "$INSTALL_DIR/data/config.json" || echo "默认: $DEFAULT_PORT"
-  read -rp "请输入新的端口号: " new_port
-  sed -i "s/\\"address\\": \\":.*\\"/\\"address\\": \":$new_port\\"/" "$INSTALL_DIR/data/config.json"
+  grep '"http_port"' "$INSTALL_DIR/data/config.json" || grep '"address"' "$INSTALL_DIR/data/config.json" || echo "默认: $DEFAULT_PORT"
+  read -rp "请输入新的端口号（4-5位数字）: " new_port
+  if [[ ! $new_port =~ ^[0-9]{4,5}$ ]]; then
+    echo "输入端口无效，必须为4-5位数字！"
+    pause_return
+    return
+  fi
+  # 优先改 http_port，其次 address
+  if grep -q '"http_port"' "$INSTALL_DIR/data/config.json"; then
+    sed -i "s/\"http_port\":\s*[0-9]\+/\"http_port\":$new_port/" "$INSTALL_DIR/data/config.json"
+  elif grep -q '"address"' "$INSTALL_DIR/data/config.json"; then
+    sed -i "s/\"address\": \":[0-9]\+\"/\"address\": \":$new_port\"/" "$INSTALL_DIR/data/config.json"
+  else
+    # 不存在则添加 http_port 字段
+    sed -i "1i\{\"http_port\":$new_port\}," "$INSTALL_DIR/data/config.json"
+  fi
   echo "[*] 端口已更新，正在重启 Alist..."
   systemctl restart alist
+  IP=$(get_server_ip)
   echo "[✔] 已更改监听端口为: $new_port"
+  echo "Web 面板访问地址： http://$IP:$new_port"
   pause_return
 }
 
 function quick_open_panel() {
-  IP=$(curl -s ipv4.ip.sb || curl -s ifconfig.me || echo "你的服务器IP")
-  echo "[*] 浏览器访问地址：http://$IP:$DEFAULT_PORT"
+  echo "[*] 正在获取默认面板地址..."
+  IP=$(get_server_ip)
+  port=$(get_alist_port)
+  echo "浏览器访问：http://$IP:$port"
   pause_return
+}
+
+function ensure_shortcut() {
+  # 检查或写入 nuro-alist 全局快捷命令
+  [ -f "$SCRIPT_PATH" ] && return
+  cat > "$SCRIPT_PATH" <<EOF
+#!/bin/bash
+bash $PWD/\$(basename \$0)
+EOF
+  chmod +x "$SCRIPT_PATH"
 }
 
 function show_menu() {
@@ -211,13 +276,14 @@ function show_menu() {
   echo "4) 查看当前 Alist 版本"
   echo "5) 重启 Alist 服务"
   echo "6) 停止 Alist 服务"
-  echo "7) 卸载 Alist"
+  echo "7) 卸载 Alist（含数据）"
   echo "8) 重置管理员密码"
   echo "9) 更改面板端口"
   echo "10) 快速显示访问地址"
-  echo "11) 退出"
+  echo "11) 卸载 NuroHia Alist"
+  echo "12) 退出"
   echo "======================================="
-  read -rp "请输入选项 [1-11]: " choice
+  read -rp "请输入选项 [1-12]: " choice
 
   case "$choice" in
     1) install_alist ;;
@@ -230,10 +296,14 @@ function show_menu() {
     8) reset_admin_password ;;
     9) change_port ;;
     10) quick_open_panel ;;
-    11) exit 0 ;;
+    11) uninstall_script ;;
+    12) exit 0 ;;
     *) echo "无效选项" && sleep 1 ;;
   esac
 }
+
+# 自动写入 nuro-alist 全局快捷命令
+ensure_shortcut
 
 while true; do
   show_menu
