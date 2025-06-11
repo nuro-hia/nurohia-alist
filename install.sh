@@ -5,6 +5,7 @@ INSTALL_DIR="/opt/alist"
 SERVICE_FILE="/etc/systemd/system/alist.service"
 ARCH=$(uname -m)
 DEFAULT_PORT=5244
+BIN_LINK="/usr/bin/nuro-alist"
 
 ALIST_AMD64_URL="https://github.com/nuro-hia/nurohia-alist/releases/download/v3.39.4/alist-linux-amd64.tar.gz"
 ALIST_ARM64_URL="https://github.com/nuro-hia/nurohia-alist/releases/download/v3.39.4/alist-linux-arm64.tar.gz"
@@ -84,16 +85,31 @@ EOF
   systemctl start alist
 
   echo "[*] 初始化管理员密码为: 用户名 admin 密码 123456"
-  "${INSTALL_DIR}/alist" admin set 123456 >/dev/null 2>&1 || true
+  "$INSTALL_DIR/alist" admin set 123456 >/dev/null 2>&1 || true
 
-  echo "Web 面板访问地址： http://你的服务器IP:$DEFAULT_PORT"
+  ln -sf "$INSTALL_DIR/alist" "$BIN_LINK"
+
+  IP=$(curl -s ipv4.ip.sb || curl -s ifconfig.me || echo "你的服务器IP")
+  echo "Web 面板访问地址： http://$IP:$DEFAULT_PORT"
   echo "======================================="
   pause_return
 }
 
 function downgrade_alist() {
   echo "[!] 正在降级至 v3.39.4..."
-  install_alist
+  mkdir -p "$INSTALL_DIR"
+  cd "$INSTALL_DIR"
+  systemctl stop alist 2>/dev/null || true
+  backup_data
+  url=$(detect_arch)
+  echo "[*] 下载 Alist..."
+  wget -O alist.tar.gz "$url"
+  tar -xzf alist.tar.gz
+  chmod +x alist
+  rm -f alist.tar.gz
+  systemctl start alist
+  echo "[*] 已降级完毕，不更改用户信息"
+  pause_return
 }
 
 function show_status() {
@@ -110,7 +126,7 @@ function show_status() {
     echo "未检测到"
   fi
   echo -n "[*] 监听端口: "
-  ss -lntp | grep alist || echo "未监听或未启动"
+  grep '"address"' "$INSTALL_DIR/data/config.json" | cut -d':' -f2- | tr -d '"}' || echo "未监听或未启动"
   echo "================================"
   pause_return
 }
@@ -148,11 +164,13 @@ function uninstall_alist() {
     systemctl daemon-reexec
     systemctl daemon-reload
     rm -rf "$INSTALL_DIR"
-    echo "[✔] Alist 已卸载"
+    rm -f "$BIN_LINK"
+    echo "[✔] Alist 已卸载并清理完毕"
+    exit 0
   else
     echo "已取消"
+    pause_return
   fi
-  pause_return
 }
 
 function reset_admin_password() {
@@ -171,7 +189,7 @@ function change_port() {
   echo "[*] 当前监听端口:"
   grep '"address"' "$INSTALL_DIR/data/config.json" || echo "默认: $DEFAULT_PORT"
   read -rp "请输入新的端口号: " new_port
-  sed -i "s/\"address\": \".*\"/\"address\": \":$new_port\"/" "$INSTALL_DIR/data/config.json"
+  sed -i "s/\\"address\\": \\":.*\\"/\\"address\\": \":$new_port\\"/" "$INSTALL_DIR/data/config.json"
   echo "[*] 端口已更新，正在重启 Alist..."
   systemctl restart alist
   echo "[✔] 已更改监听端口为: $new_port"
@@ -179,9 +197,8 @@ function change_port() {
 }
 
 function quick_open_panel() {
-  echo "[*] 正在打开默认面板地址..."
   IP=$(curl -s ipv4.ip.sb || curl -s ifconfig.me || echo "你的服务器IP")
-  echo "浏览器访问：http://$IP:$DEFAULT_PORT"
+  echo "[*] 浏览器访问地址：http://$IP:$DEFAULT_PORT"
   pause_return
 }
 
@@ -197,7 +214,7 @@ function show_menu() {
   echo "7) 卸载 Alist"
   echo "8) 重置管理员密码"
   echo "9) 更改面板端口"
-  echo "10) 快速打开访问地址"
+  echo "10) 快速显示访问地址"
   echo "11) 退出"
   echo "======================================="
   read -rp "请输入选项 [1-11]: " choice
