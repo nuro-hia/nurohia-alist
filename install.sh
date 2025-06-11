@@ -4,6 +4,7 @@ set -e
 INSTALL_DIR="/opt/alist"
 SERVICE_FILE="/etc/systemd/system/alist.service"
 ARCH=$(uname -m)
+DEFAULT_PORT=5244
 
 ALIST_AMD64_URL="https://github.com/nuro-hia/nurohia-alist/releases/download/v3.39.4/alist-linux-amd64.tar.gz"
 ALIST_ARM64_URL="https://github.com/nuro-hia/nurohia-alist/releases/download/v3.39.4/alist-linux-arm64.tar.gz"
@@ -56,6 +57,10 @@ function install_alist() {
   chmod +x alist
   rm -f alist.tar.gz
 
+  echo "[*] 初始化配置目录..."
+  mkdir -p data
+  echo '{"address": ":'"$DEFAULT_PORT"'"}' > data/config.json
+
   echo "[*] 写入 systemd 服务配置..."
   cat > "$SERVICE_FILE" <<EOF
 [Unit]
@@ -78,27 +83,10 @@ EOF
   systemctl enable alist
   systemctl start alist
 
-  echo "===== 🎉 Alist 安装完成，尝试初始化管理员信息 ====="
-  echo "[*] 等待服务启动..."
-  sleep 3
+  echo "[*] 初始化管理员密码为: 用户名 admin 密码 123456"
+  "${INSTALL_DIR}/alist" admin set 123456 >/dev/null 2>&1 || true
 
-  ADMIN_INFO=$("${INSTALL_DIR}/alist" admin --reset 2>/dev/null || true)
-
-  if [[ -z "$ADMIN_INFO" ]]; then
-    echo "[*] 第一次尝试失败，等待 2 秒后重试..."
-    sleep 2
-    ADMIN_INFO=$("${INSTALL_DIR}/alist" admin --reset 2>/dev/null || true)
-  fi
-
-  if [[ "$ADMIN_INFO" == *"Username"* && "$ADMIN_INFO" == *"Password"* ]]; then
-    echo "$ADMIN_INFO"
-  else
-    echo "[!] 未能成功获取管理员信息。"
-    echo "请稍后手动执行以下命令获取："
-    echo "  ${INSTALL_DIR}/alist admin"
-  fi
-
-  echo "Web 面板访问地址： http://你的服务器IP:5244"
+  echo "Web 面板访问地址： http://你的服务器IP:$DEFAULT_PORT"
   echo "======================================="
   pause_return
 }
@@ -171,22 +159,29 @@ function reset_admin_password() {
   echo "[!] 这将重置管理员密码，是否继续？[y/N]"
   read -r confirm
   if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
-    echo "[*] 尝试重置密码..."
-    sleep 2
-    if [ -x "$INSTALL_DIR/alist" ]; then
-      ADMIN_INFO=$("$INSTALL_DIR/alist" admin --reset 2>/dev/null || true)
-      if [[ "$ADMIN_INFO" == *"Username"* && "$ADMIN_INFO" == *"Password"* ]]; then
-        echo "===== 🔐 密码已重置 ====="
-        echo "$ADMIN_INFO"
-      else
-        echo "[!] 密码重置失败，请稍后手动运行：${INSTALL_DIR}/alist admin"
-      fi
-    else
-      echo "[✘] 未找到 Alist 可执行文件，无法重置密码。"
-    fi
+    echo "[*] 重置为默认密码 123456..."
+    "$INSTALL_DIR/alist" admin set 123456 && echo "[✔] 密码已重置为 123456"
   else
     echo "已取消操作。"
   fi
+  pause_return
+}
+
+function change_port() {
+  echo "[*] 当前监听端口:"
+  grep '"address"' "$INSTALL_DIR/data/config.json" || echo "默认: $DEFAULT_PORT"
+  read -rp "请输入新的端口号: " new_port
+  sed -i "s/\"address\": \".*\"/\"address\": \":$new_port\"/" "$INSTALL_DIR/data/config.json"
+  echo "[*] 端口已更新，正在重启 Alist..."
+  systemctl restart alist
+  echo "[✔] 已更改监听端口为: $new_port"
+  pause_return
+}
+
+function quick_open_panel() {
+  echo "[*] 正在打开默认面板地址..."
+  IP=$(curl -s ipv4.ip.sb || curl -s ifconfig.me || echo "你的服务器IP")
+  echo "浏览器访问：http://$IP:$DEFAULT_PORT"
   pause_return
 }
 
@@ -201,9 +196,11 @@ function show_menu() {
   echo "6) 停止 Alist 服务"
   echo "7) 卸载 Alist"
   echo "8) 重置管理员密码"
-  echo "9) 退出"
+  echo "9) 更改面板端口"
+  echo "10) 快速打开访问地址"
+  echo "11) 退出"
   echo "======================================="
-  read -rp "请输入选项 [1-9]: " choice
+  read -rp "请输入选项 [1-11]: " choice
 
   case "$choice" in
     1) install_alist ;;
@@ -214,7 +211,9 @@ function show_menu() {
     6) stop_alist ;;
     7) uninstall_alist ;;
     8) reset_admin_password ;;
-    9) exit 0 ;;
+    9) change_port ;;
+    10) quick_open_panel ;;
+    11) exit 0 ;;
     *) echo "无效选项" && sleep 1 ;;
   esac
 }
