@@ -281,8 +281,7 @@ function show_menu() {
   echo "8) 重置管理员密码"
   echo "9) 更改面板端口"
   echo "10) 快速显示访问地址"
-  echo "11) 卸载 NuroHia · Alist"
-  echo "12) 退出"
+  echo "11) 退出"
   echo "======================================="
   read -rp "请输入选项 [1-12]: " choice
 
