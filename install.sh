@@ -3,8 +3,6 @@ set -e
 
 INSTALL_DIR="/opt/alist"
 SERVICE_FILE="/etc/systemd/system/alist.service"
-SCRIPT_NAME="nuro-alist"
-SHORTCUT_PATH="/usr/local/bin/${SCRIPT_NAME}"
 ARCH=$(uname -m)
 DEFAULT_PORT=5244
 
@@ -215,8 +213,7 @@ function uninstall_script() {
   echo "[!] 确认卸载 nuro-alist 脚本自身？[y/N]"
   read -r confirm
   if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
-    rm -f "$SHORTCUT_PATH"
-    echo "[✔] 已卸载 nuro-alist 快捷命令（Alist 本体和数据不会被删除）"
+    echo "[✔] 手动删除脚本本体即可（已取消快捷命令功能）"
     exit 0
   else
     echo "已取消"
@@ -272,12 +269,6 @@ function quick_open_panel() {
   pause_return
 }
 
-function ensure_shortcut() {
-  # 全局快捷方式，软链到脚本本身
-  [ "$(readlink "$SHORTCUT_PATH" 2>/dev/null)" = "$(realpath "$0")" ] && return
-  ln -sf "$(realpath "$0")" "$SHORTCUT_PATH"
-}
-
 function show_menu() {
   clear
   echo "===== NuroHia Alist v3.39.4 一键部署管理器 ====="
@@ -312,8 +303,6 @@ function show_menu() {
     *) echo "无效选项" && sleep 1 ;;
   esac
 }
-
-ensure_shortcut
 
 while true; do
   show_menu
