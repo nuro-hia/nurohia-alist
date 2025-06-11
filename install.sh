@@ -40,7 +40,6 @@ function get_server_ip() {
 
 function get_alist_port() {
   if [ -f "$INSTALL_DIR/data/config.json" ]; then
-    # 兼容新老字段
     port=$(grep -Po '"http_port"\s*:\s*\K\d+' "$INSTALL_DIR/data/config.json" || grep -Po '"address"\s*:\s*":\K\d+' "$INSTALL_DIR/data/config.json")
     if [[ $port =~ ^[0-9]{4,5}$ ]]; then
       echo "$port"
@@ -238,7 +237,6 @@ function change_port() {
   elif grep -q '"address"' "$INSTALL_DIR/data/config.json"; then
     sed -i "s/\"address\": \":[0-9]\+\"/\"address\": \":$new_port\"/" "$INSTALL_DIR/data/config.json"
   else
-    # 不存在则添加 http_port 字段
     sed -i "1i\{\"http_port\":$new_port\}," "$INSTALL_DIR/data/config.json"
   fi
   echo "[*] 端口已更新，正在重启 Alist..."
@@ -258,13 +256,10 @@ function quick_open_panel() {
 }
 
 function ensure_shortcut() {
-  # 检查或写入 nuro-alist 全局快捷命令
-  [ -f "$SCRIPT_PATH" ] && return
-  cat > "$SCRIPT_PATH" <<EOF
-#!/bin/bash
-bash $PWD/\$(basename \$0)
-EOF
+  # 强制覆盖为全功能脚本本体，保证 nuro-alist 随时可用
+  cp "$0" "$SCRIPT_PATH"
   chmod +x "$SCRIPT_PATH"
+  # 不提示消息，用户无感知
 }
 
 function show_menu() {
@@ -302,7 +297,7 @@ function show_menu() {
   esac
 }
 
-# 自动写入 nuro-alist 全局快捷命令
+# 强制写入 nuro-alist 快捷命令（永远同步最新本体）
 ensure_shortcut
 
 while true; do
