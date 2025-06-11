@@ -6,8 +6,8 @@ SERVICE_FILE="/etc/systemd/system/alist.service"
 ARCH=$(uname -m)
 
 # === 替换为你实际的 tar.gz 链接 ===
-ALIST_AMD64_URL="https://example.com/alist-linux-amd64-v3.39.4.tar.gz"
-ALIST_ARM64_URL="https://example.com/alist-linux-arm64-v3.39.4.tar.gz"
+ALIST_AMD64_URL="https://github.com/nuro-hia/nurohia-alist/releases/download/v3.39.4/alist-linux-amd64.tar.gz"
+ALIST_ARM64_URL="https://github.com/nuro-hia/nurohia-alist/releases/download/v3.39.4/alist-linux-arm64.tar.gz"
 
 function detect_arch() {
   if [[ "$ARCH" == "x86_64" ]]; then
