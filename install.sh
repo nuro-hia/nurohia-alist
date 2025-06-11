@@ -220,7 +220,7 @@ function uninstall_alist() {
 }
 
 function manual_reset_admin_password() {
-  echo "[!] 这将只重置管理员账号的密码为 123456，是否继续？[y/N]"
+  echo "[!] 这将只重置“第一个管理员账号”的密码为 123456，是否继续？[y/N]"
   read -r confirm
   if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
     # 获取第一个管理员用户名
@@ -236,7 +236,6 @@ function manual_reset_admin_password() {
   fi
   pause_return
 }
-
 
 function change_port() {
   if [ ! -f "$INSTALL_DIR/data/config.json" ]; then
