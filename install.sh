@@ -5,7 +5,6 @@ INSTALL_DIR="/opt/alist"
 SERVICE_FILE="/etc/systemd/system/alist.service"
 ARCH=$(uname -m)
 
-# 默认链接（用户不输入时使用）
 ALIST_AMD64_URL="https://github.com/nuro-hia/nurohia-alist/releases/download/v3.39.4/alist-linux-amd64.tar.gz"
 ALIST_ARM64_URL="https://github.com/nuro-hia/nurohia-alist/releases/download/v3.39.4/alist-linux-arm64.tar.gz"
 
@@ -79,14 +78,26 @@ EOF
   systemctl enable alist
   systemctl start alist
 
-  echo "===== 🎉 Alist 安装完成，初始化管理员信息如下 ====="
-  sleep 2
+  echo "===== 🎉 Alist 安装完成，尝试初始化管理员信息 ====="
+  echo "[*] 等待服务启动..."
+  sleep 3
+
   ADMIN_INFO=$("${INSTALL_DIR}/alist" admin --reset 2>/dev/null || true)
+
+  if [[ -z "$ADMIN_INFO" ]]; then
+    echo "[*] 第一次尝试失败，等待 2 秒后重试..."
+    sleep 2
+    ADMIN_INFO=$("${INSTALL_DIR}/alist" admin --reset 2>/dev/null || true)
+  fi
+
   if [[ "$ADMIN_INFO" == *"Username"* && "$ADMIN_INFO" == *"Password"* ]]; then
     echo "$ADMIN_INFO"
   else
-    echo "[*] 无法自动获取账号信息，可能因已有数据。可手动执行: ${INSTALL_DIR}/alist admin"
+    echo "[!] 未能成功获取管理员信息。"
+    echo "请稍后手动执行以下命令获取："
+    echo "  ${INSTALL_DIR}/alist admin"
   fi
+
   echo "Web 面板访问地址： http://你的服务器IP:5244"
   echo "======================================="
   pause_return
@@ -160,11 +171,16 @@ function reset_admin_password() {
   echo "[!] 这将重置管理员密码，是否继续？[y/N]"
   read -r confirm
   if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
+    echo "[*] 尝试重置密码..."
+    sleep 2
     if [ -x "$INSTALL_DIR/alist" ]; then
-      NEW_ADMIN=$("$INSTALL_DIR/alist" admin --reset 2>/dev/null)
-      echo "===== 🔐 密码已重置 ====="
-      echo "$NEW_ADMIN"
-      echo "================================"
+      ADMIN_INFO=$("$INSTALL_DIR/alist" admin --reset 2>/dev/null || true)
+      if [[ "$ADMIN_INFO" == *"Username"* && "$ADMIN_INFO" == *"Password"* ]]; then
+        echo "===== 🔐 密码已重置 ====="
+        echo "$ADMIN_INFO"
+      else
+        echo "[!] 密码重置失败，请稍后手动运行：${INSTALL_DIR}/alist admin"
+      fi
     else
       echo "[✘] 未找到 Alist 可执行文件，无法重置密码。"
     fi
