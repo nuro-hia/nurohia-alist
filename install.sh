@@ -20,6 +20,11 @@ function detect_arch() {
   fi
 }
 
+function pause_return() {
+  echo
+  read -rp "按回车键返回菜单..."
+}
+
 function backup_data() {
   if [ -f "$INSTALL_DIR/data/data.db" ]; then
     cp "$INSTALL_DIR/data/data.db" "$INSTALL_DIR/data/data.db.bak.$(date +%Y%m%d%H%M%S)"
@@ -28,7 +33,7 @@ function backup_data() {
 }
 
 function install_alist() {
-  echo "[+] 安装 Alist v3.39.4 到 $INSTALL_DIR"
+  echo "[+] 安装 Alist 到 $INSTALL_DIR"
   mkdir -p "$INSTALL_DIR"
   cd "$INSTALL_DIR"
 
@@ -74,9 +79,9 @@ EOF
   systemctl enable alist
   systemctl start alist
 
-  echo "===== 🎉 Alist 部署完成，登录信息如下 ====="
+  echo "===== 🎉 Alist 安装完成，初始化管理员信息如下 ====="
   sleep 2
-  ADMIN_INFO=$("${INSTALL_DIR}/alist" admin 2>/dev/null || true)
+  ADMIN_INFO=$("${INSTALL_DIR}/alist" admin --reset 2>/dev/null || true)
   if [[ "$ADMIN_INFO" == *"Username"* && "$ADMIN_INFO" == *"Password"* ]]; then
     echo "$ADMIN_INFO"
   else
@@ -84,6 +89,7 @@ EOF
   fi
   echo "Web 面板访问地址： http://你的服务器IP:5244"
   echo "======================================="
+  pause_return
 }
 
 function downgrade_alist() {
@@ -107,6 +113,7 @@ function show_status() {
   echo -n "[*] 监听端口: "
   ss -lntp | grep alist || echo "未监听或未启动"
   echo "================================"
+  pause_return
 }
 
 function show_version() {
@@ -117,16 +124,19 @@ function show_version() {
     echo "未检测到 Alist 可执行文件"
   fi
   echo "================================"
+  pause_return
 }
 
 function restart_alist() {
   systemctl restart alist
   echo "[*] Alist 已重启"
+  pause_return
 }
 
 function stop_alist() {
   systemctl stop alist
   echo "[*] Alist 已停止"
+  pause_return
 }
 
 function uninstall_alist() {
@@ -143,6 +153,7 @@ function uninstall_alist() {
   else
     echo "已取消"
   fi
+  pause_return
 }
 
 function reset_admin_password() {
@@ -160,6 +171,7 @@ function reset_admin_password() {
   else
     echo "已取消操作。"
   fi
+  pause_return
 }
 
 function show_menu() {
