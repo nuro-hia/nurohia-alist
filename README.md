@@ -17,9 +17,10 @@ bash <(curl -fsSL https://raw.githubusercontent.com/nuro-hia/nurohia-alist/main/
 运行后将进入交互菜单，功能如下：
 
 ```
-===== NuroHia Alist v3.39.4 一键部署管理器 =====
+===== NuroHia · Alist 一键部署&管理菜单 =====
+===== 默认安装为 v3.39.4 版本（支持自定义包链接） =====
 
-1) 安装 Alist v3.39.4（支持自定义压缩包链接）
+1) 安装 Alist（可自定义安装包链接，默认 v3.39.4）
 2) 强制降级至 v3.39.4
 3) 查看当前运行状态
 4) 查看当前 Alist 版本
@@ -28,6 +29,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/nuro-hia/nurohia-alist/main/
 7) 卸载 Alist
 8) 重置管理员密码
 9) 退出
+=======================================
+
 ```
 
 ## 📁 安装位置与服务说明
@@ -35,7 +38,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/nuro-hia/nurohia-alist/main/
 - 安装目录：`/opt/alist`
 - systemd 服务名：`alist`
 - 默认数据路径：`/opt/alist/data/`
-- 默认端口：`5244`（可通过 config.json 修改）
+- 默认端口：`5244`
 
 ## 🔐 安装成功后将自动显示登录信息：
 
@@ -54,4 +57,4 @@ Web 面板: http://<你的服务器IP>:5244
 
 ## 📌 免责声明
 
-本脚本由 NuroHia 编写与维护，适用于希望部署 Alist v3.39.4 的用户，如遇到 bug 可通过 issue 提出反馈。
+本脚本仅供学习和个人测试用途，请勿用于任何商业或非法目的。使用本项目造成的任何后果由使用者自行承担。如发现问题或 bug，可通过 Issue 提出反馈。
