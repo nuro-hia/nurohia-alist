@@ -276,7 +276,7 @@ function show_menu() {
   echo "4) 查看当前 Alist 版本"
   echo "5) 重启 Alist 服务"
   echo "6) 停止 Alist 服务"
-  echo "7) 卸载 Alist（含数据）"
+  echo "7) 卸载 Alist"
   echo "8) 重置管理员密码"
   echo "9) 更改面板端口"
   echo "10) 快速显示访问地址"
