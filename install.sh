@@ -219,18 +219,6 @@ function uninstall_alist() {
   pause_return
 }
 
-function uninstall_script() {
-  echo "[!] 确认卸载 nuro-alist 脚本自身？[y/N]"
-  read -r confirm
-  if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
-    echo "[✔] 手动删除脚本本体即可"
-    exit 0
-  else
-    echo "已取消"
-    pause_return
-  fi
-}
-
 function manual_reset_admin_password() {
   echo "[!] 这将重置管理员密码为 123456，是否继续？[y/N]"
   read -r confirm
@@ -309,8 +297,7 @@ function show_menu() {
     8) manual_reset_admin_password ;;
     9) change_port ;;
     10) quick_open_panel ;;
-    11) uninstall_script ;;
-    12) exit 0 ;;
+    11) exit 0 ;;
     *) echo "无效选项" && sleep 1 ;;
   esac
 }
