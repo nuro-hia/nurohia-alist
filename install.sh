@@ -270,9 +270,9 @@ function quick_open_panel() {
 function show_menu() {
   clear
   echo "===== NuroHia · Alist 一键部署&管理菜单 ====="
-  echo "===== 默认安装为 v3.39.4 版本 ====="
+  echo "===== 安装、强制降级默认为 v3.39.4 版本 ====="
   echo "1) 安装 Alist"
-  echo "2) 强制降级至 v3.39.4"
+  echo "2) 强制降级Alist 版本"
   echo "3) 查看当前运行状态"
   echo "4) 查看当前 Alist 版本"
   echo "5) 重启 Alist 服务"
