@@ -11,14 +11,12 @@ DEFAULT_PORT=5244
 ALIST_AMD64_URL="https://github.com/nuro-hia/nurohia-alist/releases/download/v3.39.4/alist-linux-amd64.tar.gz"
 ALIST_ARM64_URL="https://github.com/nuro-hia/nurohia-alist/releases/download/v3.39.4/alist-linux-arm64.tar.gz"
 
-### 快捷命令自动部署（如未在 /usr/local/bin 下执行自己，则拷贝自身并重新启动）
-if [[ "$0" != "$SHORTCUT_PATH" ]]; then
+### 自动部署快捷命令（每次都执行一次，无论怎么启动，主菜单不被打断）
+if [[ ! -f "$SHORTCUT_PATH" || "$(readlink "$SHORTCUT_PATH" 2>/dev/null)" || ! -s "$SHORTCUT_PATH" ]]; then
+    rm -f "$SHORTCUT_PATH"
     cp "$0" "$SHORTCUT_PATH"
     chmod +x "$SHORTCUT_PATH"
-    echo "[✔] 快捷命令已安装！以后直接输入 nuro-alist 启动菜单。"
-    sleep 1
-    exec "$SHORTCUT_PATH" "$@"
-    exit 0
+    echo "[✔] 已写入全局命令 nuro-alist，可直接输入 nuro-alist 启动菜单。"
 fi
 
 function detect_arch() {
