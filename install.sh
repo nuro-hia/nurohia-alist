@@ -11,12 +11,6 @@ DEFAULT_PORT=5244
 ALIST_AMD64_URL="https://github.com/nuro-hia/nurohia-alist/releases/download/v3.39.4/alist-linux-amd64.tar.gz"
 ALIST_ARM64_URL="https://github.com/nuro-hia/nurohia-alist/releases/download/v3.39.4/alist-linux-arm64.tar.gz"
 
-### -------- 每次进入菜单都写一次快捷命令，不做任何跳转/判断 --------
-rm -f "$SHORTCUT_PATH"
-cp "$0" "$SHORTCUT_PATH"
-chmod +x "$SHORTCUT_PATH"
-echo "[✔] 已写入/更新全局命令 nuro-alist，可直接输入 nuro-alist 启动菜单。"
-
 function detect_arch() {
   if [[ "$ARCH" == "x86_64" ]]; then
     echo "$ALIST_AMD64_URL"
@@ -278,6 +272,12 @@ function quick_open_panel() {
   pause_return
 }
 
+function ensure_shortcut() {
+  # 全局快捷方式，软链到脚本本身
+  [ "$(readlink "$SHORTCUT_PATH" 2>/dev/null)" = "$(realpath "$0")" ] && return
+  ln -sf "$(realpath "$0")" "$SHORTCUT_PATH"
+}
+
 function show_menu() {
   clear
   echo "===== NuroHia Alist v3.39.4 一键部署管理器 ====="
@@ -312,6 +312,8 @@ function show_menu() {
     *) echo "无效选项" && sleep 1 ;;
   esac
 }
+
+ensure_shortcut
 
 while true; do
   show_menu
