@@ -271,7 +271,8 @@ function quick_open_panel() {
 
 function show_menu() {
   clear
-  echo "===== NuroHia Alist v3.39.4 一键部署管理器 ====="
+  echo "===== NuroHia · Alist 一键部署&管理菜单 ====="
+  echo "===== 默认安装为 v3.39.4 版本 ====="
   echo "1) 安装 Alist"
   echo "2) 强制降级至 v3.39.4"
   echo "3) 查看当前运行状态"
@@ -282,7 +283,7 @@ function show_menu() {
   echo "8) 重置管理员密码"
   echo "9) 更改面板端口"
   echo "10) 快速显示访问地址"
-  echo "11) 卸载 NuroHia Alist"
+  echo "11) 卸载 NuroHia · Alist"
   echo "12) 退出"
   echo "======================================="
   read -rp "请输入选项 [1-12]: " choice
