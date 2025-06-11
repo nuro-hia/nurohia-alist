@@ -223,7 +223,7 @@ function uninstall_script() {
   echo "[!] 确认卸载 nuro-alist 脚本自身？[y/N]"
   read -r confirm
   if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
-    echo "[✔] 手动删除脚本本体即可（已取消快捷命令功能）"
+    echo "[✔] 手动删除脚本本体即可"
     exit 0
   else
     echo "已取消"
