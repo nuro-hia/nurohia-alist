@@ -220,19 +220,19 @@ function uninstall_alist() {
 }
 
 function manual_reset_admin_password() {
-  echo "[!] 这将只重置“第一个管理员账号”的密码为 123456，是否继续？[y/N]"
+  echo "[!] 这将重置主管理员账号密码为 123456，是否继续？[y/N]"
   read -r confirm
-  if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
-    # 获取第一个管理员用户名
-    admin_user=$("$INSTALL_DIR/alist" admin info 2>/dev/null | grep -m1 'username:' | awk '{print $2}')
-    if [ -n "$admin_user" ]; then
-      echo "[*] 正在重置管理员账号（$admin_user）密码为 123456..."
-      "$INSTALL_DIR/alist" admin set "$admin_user" 123456 && echo "[✔] 用户名：$admin_user 密码已重置为 123456"
-    else
-      echo "[✘] 未找到管理员账号，无法重置密码。"
-    fi
-  else
+  if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
     echo "已取消操作。"
+    pause_return
+    return
+  fi
+  admin_user=$("$INSTALL_DIR/alist" admin info 2>&1 | grep "Admin user's username" | awk -F': ' '{print $2}')
+  if [ -n "$admin_user" ]; then
+    echo "[*] 正在重置管理员账号（$admin_user）密码为 123456..."
+    "$INSTALL_DIR/alist" admin set 123456 && echo "[✔] 用户名：$admin_user 密码已重置为 123456"
+  else
+    echo "[✘] 未检测到管理员账号，可能数据异常，请检查安装或数据目录。"
   fi
   pause_return
 }
