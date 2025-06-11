@@ -130,12 +130,21 @@ EOF
 }
 
 function downgrade_alist() {
-  echo "[!] 正在降级至 v3.39.4，仅覆盖二进制文件，不重置账号和配置。"
+  echo "[!] 正在降级，仅覆盖二进制文件，不重置账号和配置。"
   mkdir -p "$INSTALL_DIR"
   cd "$INSTALL_DIR"
 
   systemctl stop alist 2>/dev/null || true
-  url=$(detect_arch)
+
+  echo -e "[*] 是否使用自定义 .tar.gz 下载链接？\n留空则使用默认版本 v3.39.4"
+  read -rp "请输入降级下载链接: " custom_url
+
+  if [[ -n "$custom_url" ]]; then
+    url="$custom_url"
+  else
+    url=$(detect_arch)
+  fi
+
   wget -O alist.tar.gz "$url"
   tar -xzf alist.tar.gz
   chmod +x alist
@@ -148,6 +157,7 @@ function downgrade_alist() {
   echo "Web 面板访问地址： http://$IP:$port"
   pause_return
 }
+
 
 function show_status() {
   echo "===== 当前 Alist 状态 ====="
