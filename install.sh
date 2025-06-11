@@ -3,7 +3,8 @@ set -e
 
 INSTALL_DIR="/opt/alist"
 SERVICE_FILE="/etc/systemd/system/alist.service"
-SCRIPT_PATH="/usr/local/bin/nuro-alist"
+SCRIPT_NAME="nuro-alist"
+SHORTCUT_PATH="/usr/local/bin/${SCRIPT_NAME}"
 ARCH=$(uname -m)
 DEFAULT_PORT=5244
 
@@ -40,7 +41,6 @@ function get_server_ip() {
 
 function get_alist_port() {
   if [ -f "$INSTALL_DIR/data/config.json" ]; then
-    # 兼容新老字段
     port=$(grep -Po '"http_port"\s*:\s*\K\d+' "$INSTALL_DIR/data/config.json" || grep -Po '"address"\s*:\s*":\K\d+' "$INSTALL_DIR/data/config.json")
     if [[ $port =~ ^[0-9]{4,5}$ ]]; then
       echo "$port"
@@ -52,10 +52,22 @@ function get_alist_port() {
   fi
 }
 
+function reset_admin_password() {
+  echo "[*] 管理员密码将重置为 123456..."
+  "$INSTALL_DIR/alist" admin set 123456 && echo "[✔] 密码已重置为 123456"
+}
+
 function install_alist() {
   echo "[+] 安装 Alist 到 $INSTALL_DIR"
   mkdir -p "$INSTALL_DIR"
   cd "$INSTALL_DIR"
+
+  # 判断是否已有数据库
+  if [ ! -f data/data.db ]; then
+    is_fresh_install=1
+  else
+    is_fresh_install=0
+  fi
 
   systemctl stop alist 2>/dev/null || true
   backup_data
@@ -79,7 +91,6 @@ function install_alist() {
 
   echo "[*] 初始化配置目录..."
   mkdir -p data
-  # 配置文件初始化，若已存在不覆盖端口
   if [ ! -f data/config.json ]; then
     echo '{"http_port":'"$DEFAULT_PORT"'}' > data/config.json
   fi
@@ -105,6 +116,13 @@ EOF
   systemctl daemon-reload
   systemctl enable alist
   systemctl start alist
+
+  # 如果是全新安装，初始化管理员密码
+  if [[ $is_fresh_install -eq 1 ]]; then
+    sleep 2
+    reset_admin_password
+    echo "[*] 管理员账号：admin 密码：123456"
+  fi
 
   IP=$(get_server_ip)
   port=$(get_alist_port)
@@ -197,7 +215,7 @@ function uninstall_script() {
   echo "[!] 确认卸载 nuro-alist 脚本自身？[y/N]"
   read -r confirm
   if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
-    rm -f "$SCRIPT_PATH"
+    rm -f "$SHORTCUT_PATH"
     echo "[✔] 已卸载 nuro-alist 快捷命令（Alist 本体和数据不会被删除）"
     exit 0
   else
@@ -206,12 +224,11 @@ function uninstall_script() {
   fi
 }
 
-function reset_admin_password() {
-  echo "[!] 这将重置管理员密码，是否继续？[y/N]"
+function manual_reset_admin_password() {
+  echo "[!] 这将重置管理员密码为 123456，是否继续？[y/N]"
   read -r confirm
   if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
-    echo "[*] 重置为默认密码 123456..."
-    "$INSTALL_DIR/alist" admin set 123456 && echo "[✔] 密码已重置为 123456"
+    reset_admin_password
   else
     echo "已取消操作。"
   fi
@@ -232,13 +249,11 @@ function change_port() {
     pause_return
     return
   fi
-  # 优先改 http_port，其次 address
   if grep -q '"http_port"' "$INSTALL_DIR/data/config.json"; then
     sed -i "s/\"http_port\":\s*[0-9]\+/\"http_port\":$new_port/" "$INSTALL_DIR/data/config.json"
   elif grep -q '"address"' "$INSTALL_DIR/data/config.json"; then
     sed -i "s/\"address\": \":[0-9]\+\"/\"address\": \":$new_port\"/" "$INSTALL_DIR/data/config.json"
   else
-    # 不存在则添加 http_port 字段
     sed -i "1i\{\"http_port\":$new_port\}," "$INSTALL_DIR/data/config.json"
   fi
   echo "[*] 端口已更新，正在重启 Alist..."
@@ -258,13 +273,9 @@ function quick_open_panel() {
 }
 
 function ensure_shortcut() {
-  # 检查或写入 nuro-alist 全局快捷命令
-  [ -f "$SCRIPT_PATH" ] && return
-  cat > "$SCRIPT_PATH" <<EOF
-#!/bin/bash
-bash $PWD/\$(basename \$0)
-EOF
-  chmod +x "$SCRIPT_PATH"
+  # 全局快捷方式，软链到脚本本身
+  [ "$(readlink "$SHORTCUT_PATH" 2>/dev/null)" = "$(realpath "$0")" ] && return
+  ln -sf "$(realpath "$0")" "$SHORTCUT_PATH"
 }
 
 function show_menu() {
@@ -293,7 +304,7 @@ function show_menu() {
     5) restart_alist ;;
     6) stop_alist ;;
     7) uninstall_alist ;;
-    8) reset_admin_password ;;
+    8) manual_reset_admin_password ;;
     9) change_port ;;
     10) quick_open_panel ;;
     11) uninstall_script ;;
@@ -302,7 +313,6 @@ function show_menu() {
   esac
 }
 
-# 自动写入 nuro-alist 全局快捷命令
 ensure_shortcut
 
 while true; do
