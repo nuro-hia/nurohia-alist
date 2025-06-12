@@ -227,15 +227,8 @@ function manual_reset_admin_password() {
     pause_return
     return
   fi
-
-  result=$("$INSTALL_DIR/alist" admin set 123456 2>&1)
-  admin_user=$(echo "$result" | grep 'username:' | awk -F': ' '{print $2}' | xargs)
-  if [[ "$result" == *"password: 123456"* ]]; then
-    echo "[✔] 用户名：$admin_user 密码已重置为 123456"
-  else
-    echo "[✘] 密码重置失败，请检查 Alist 安装及管理员状态。"
-    echo "$result"
-  fi
+  
+  "$INSTALL_DIR/alist" admin set 123456
   pause_return
 }
 
