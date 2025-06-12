@@ -227,8 +227,8 @@ function manual_reset_admin_password() {
     pause_return
     return
   fi
-  
-  "$INSTALL_DIR/alist" admin set 123456
+  cd "$INSTALL_DIR"
+  ./alist admin set 123456
   pause_return
 }
 
