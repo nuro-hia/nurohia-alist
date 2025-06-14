@@ -1,4 +1,4 @@
-# Alist v3.39.4 一键降级/部署脚本【NuroHia定制】
+# Alist v3.39.4 一键降级/部署脚本【Nuro定制】
 
 ## 前言
 
@@ -35,7 +35,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/nuro-hia/nurohia-alist/main/
 运行脚本后，将进入如下交互菜单：
 
 ```
-===== NuroHia · Alist 一键部署&管理菜单 =====
+===== Nuro · Alist 一键部署&管理菜单 =====
 ===== 安装、强制降级默认为 v3.39.4 版本 =====
 
 1) 安装 Alist
